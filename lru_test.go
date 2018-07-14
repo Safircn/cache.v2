@@ -8,7 +8,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-  cache := NewLruCache(1000)
+  cache := NewLruCache(10)
 
   cache.Add("1", 1, time.Minute)
   cache.Add("2", 1, time.Minute)
@@ -54,7 +54,6 @@ func TestRun(t *testing.T) {
   cache.Get("1000002")
   cache.Get("1000003")
   cache.Delete("1000003")
-  cache.Flush()
   fmt.Printf("%+v\n", cache.(*LruCache))
   printEvictList(cache.(*LruCache).evictList,cache.(*LruCache).currentLen)
 }
@@ -63,7 +62,7 @@ func printEvictList(evictList *EvictList, currentNum int) {
   if evictList != nil {
     num := 0
     for e := evictList; e != nil; e = e.next {
-      //fmt.Printf("key:%s  pren:%p current:%p next:%p \n", e.key, e.prev, e, e.next)
+      fmt.Printf("key:%s  pren:%p current:%p next:%p \n", e.key, e.prev, e, e.next)
       if e.next != nil {
         if e.next.prev != e {
           fmt.Println("!!!!!!!!!!!!!! next")

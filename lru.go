@@ -42,38 +42,37 @@ func NewLruCache(total int) Cache {
 }
 
 func (this *LruCache) Add(key string, val interface{}, timeout time.Duration) {
-  this.rwMutex.Lock()
   expiredTime := time.Now().Add(timeout)
-  var evictList *EvictList
+  this.rwMutex.Lock()
   if this.evictList == nil {
     this.evictList = &EvictList{
       key: key,
     }
     this.endEvictList = this.evictList
     this.currentLen++
-    evictList = this.evictList
   } else {
     if v, ok := this.cacheList[key]; ok {
       this.top(v.evictList)
-      evictList = v.evictList
-    } else {
-      if this.TotalLen <= this.currentLen {
-        this.delete(this.endEvictList.key)
-      }
-      this.evictList.prev = &EvictList{
-        key:  key,
-        next: this.evictList,
-      }
-      this.evictList = this.evictList.prev
-      this.evictList.prev = nil
-      this.currentLen++
-      evictList = this.evictList
+      this.cacheList[key].data = val
+      this.cacheList[key].expiredTime = &expiredTime
+      this.rwMutex.Unlock()
+      return
     }
+    if this.TotalLen <= this.currentLen {
+      this.delete(this.endEvictList.key)
+    }
+    this.evictList.prev = &EvictList{
+      key:  key,
+      next: this.evictList,
+    }
+    this.evictList = this.evictList.prev
+    this.evictList.prev = nil
+    this.currentLen++
   }
   this.cacheList[key] = &LruCacheRow{
     expiredTime: &expiredTime,
     data:        val,
-    evictList:   evictList,
+    evictList:   this.evictList,
   }
   this.rwMutex.Unlock()
 }
@@ -82,22 +81,16 @@ func (this *LruCache) top(evictList *EvictList) {
   if evictList == this.evictList {
     return
   }
-  if evictList.prev != nil {
-    evictList.prev.next = evictList.next
-    if evictList.next != nil {
-      evictList.next.prev = evictList.prev
-    }
-
-    if this.endEvictList == evictList {
-      this.endEvictList = evictList.prev
-    }
-    if this.evictList != nil {
-      this.evictList.prev = evictList
-      evictList.prev = nil
-    }
-    evictList.next = this.evictList
-    this.evictList = evictList
+  evictList.prev.next = evictList.next
+  if evictList.next != nil {
+    evictList.next.prev = evictList.prev
+  } else {
+    this.endEvictList = evictList.prev
   }
+  this.evictList.prev = evictList
+  evictList.prev = nil
+  evictList.next = this.evictList
+  this.evictList = evictList
 }
 func (this *LruCache) Set(key string, val interface{}) {
   this.rwMutex.Lock()
