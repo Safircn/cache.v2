@@ -6,13 +6,17 @@ import (
 )
 
 func init() {
-  caches = make([]*CacheBox, 0)
+  caches = make([]GC, 0)
 }
 
 var (
-  caches []*CacheBox
+  caches []GC
   _      Cache = (*CacheBox)(nil)
 )
+
+type GC interface {
+  GC()
+}
 
 type Cache interface {
   Add(key string, val interface{}, timeout time.Duration)
@@ -117,15 +121,19 @@ func Run(Interval int) {
   }
 }
 
-func Gc() {
-  for k, v := range caches {
-    v.rwMutex.Lock()
-    for kk, vv := range v.cacheList {
-      if vv.expiredTime.Sub(time.Now()) < -1 {
-        delete(caches[k].cacheList, kk)
-      }
+func (this *CacheBox) GC() {
+  this.rwMutex.Lock()
+  for kk, vv := range this.cacheList {
+    if vv.expiredTime.Sub(time.Now()) < -1 {
+      delete(this.cacheList, kk)
     }
-    v.rwMutex.Unlock()
+  }
+  this.rwMutex.Unlock()
+}
+
+func Gc() {
+  for k := range caches {
+    caches[k].GC()
   }
 }
 
