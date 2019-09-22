@@ -146,20 +146,20 @@ func (this *LruCache) Get(key string) (interface{}, bool) {
 }
 
 func (this *LruCache) IsExist(key string) bool {
-	var flag bool
+	var flagMain bool
 	this.rwMutex.RLock()
 	if v, flag := this.cacheList[key]; flag {
 		if v.expiredTime.After(time.Now()) {
-			flag = true
+			flagMain = true
 		}
 	}
 	this.rwMutex.RUnlock()
-	if flag {
+	if flagMain {
 		this.rwMutex.Lock()
 		this.top(this.cacheList[key].evictList)
 		this.rwMutex.Unlock()
 	}
-	return flag
+	return flagMain
 }
 
 func (this *LruCache) Flush() {
