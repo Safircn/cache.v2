@@ -133,7 +133,7 @@ func (this *LruCache) Get(key string) (interface{}, bool) {
 		if v.expiredTime.After(time.Now()) {
 			this.top(this.cacheList[key].evictList)
 			data = v.data
-			flag = true
+			flagMain = true
 		}
 	}
 	this.rwMutex.RUnlock()
